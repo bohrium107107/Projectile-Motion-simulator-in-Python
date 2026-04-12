@@ -65,7 +65,7 @@ SHATTER_IMAGES = {
 }
 
 CANNON_IMG = load_img("assets/cannon/cannon.png")
-GROUND_IMG = load_img("assets/ground/ground.png")
+#GROUND_IMG = load_img("assets/ground/ground.png")
 
 LIQUID_IMAGES = {
     "Water": load_img("assets/liquid/water.png"),
@@ -145,6 +145,8 @@ LIQUIDS = {
     #"Mercury":   {"density": 13.6, "drag": 0.05,  "color": (180, 180, 195)},
 }
 current_liquid = "Water"
+
+ball_trail = []
 
 def get_g():
     return GRAVITY_OPTIONS[current_planet]
@@ -309,8 +311,8 @@ def draw_scene(mouse_x, mouse_y):
     screen.blit(bg, (0, 0))
 
     # Ground
-    ground_img = pygame.transform.scale(GROUND_IMG, (SIDEBAR_X, SCREEN_HEIGHT - GROUND_Y))
-    screen.blit(ground_img, (0, GROUND_Y))
+    #ground_img = pygame.transform.scale(GROUND_IMG, (SIDEBAR_X, SCREEN_HEIGHT - GROUND_Y))
+    #screen.blit(ground_img, (0, GROUND_Y))
 
     # NEW
     if liquid_mode:
@@ -343,6 +345,7 @@ def draw_scene(mouse_x, mouse_y):
     font_sm = pygame.font.SysFont("Courier New", sv(18))
     font_md = pygame.font.SysFont("Courier New", sv(22), bold=True)
     font_tiny = pygame.font.SysFont("Courier New", sv(13))
+    
 
 
     if not launched:
@@ -356,6 +359,10 @@ def draw_scene(mouse_x, mouse_y):
         ball_img = CLAY_CRACKED_IMG if (current_ball == "Clay" and clay_cracked) else BALL_IMAGES[current_ball]
         screen.blit(ball_img, (int(ball_x - ball_r), int(ball_y - ball_r)))
     else:
+        for i, pos in enumerate(ball_trail):
+            alpha = max(80, 255 - (len(ball_trail) - i) * 3)  # fades toward the start
+            radius = max(1, sv(3))
+            pygame.draw.circle(screen, (255, 180, 50), pos, radius)
         ball_img = CLAY_CRACKED_IMG if (current_ball == "Clay" and clay_cracked) else BALL_IMAGES[current_ball]
         screen.blit(ball_img, (int(ball_x - ball_r), int(ball_y - ball_r)))
 
@@ -440,8 +447,8 @@ def draw_scene(mouse_x, mouse_y):
     for i, (key, action) in enumerate(controls):
         x_center = i * col_w + col_w // 2
 
-        key_text = font_bold.render(key, True, WHITE)
-        act_text = font_small.render(action, True, WHITE)
+        key_text = font_bold.render(key, True, BLACK)
+        act_text = font_small.render(action, True, BLACK)
 
         total_height = key_text.get_height() + act_text.get_height()
         start_y = panel_center_y - total_height // 2
@@ -453,7 +460,7 @@ def draw_scene(mouse_x, mouse_y):
         if i != 0:
             pygame.draw.line(
                 screen,
-                (0, 100, 0),
+                (0, 0, 0),
                 (i * col_w, panel_top),
                 (i * col_w, SCREEN_HEIGHT),
                 1
@@ -471,13 +478,14 @@ def draw_scene(mouse_x, mouse_y):
 
 #  Reset 
 def reset_ball():
-    global ball_x, ball_y, ball_vx, ball_vy, launched, clay_cracked
+    global ball_x, ball_y, ball_vx, ball_vy, launched, clay_cracked, ball_trail
     ball_x   = float(CANNON_X)
     ball_y   = float(CANNON_Y)
     ball_vx  = 0.0
     ball_vy  = 0.0
     launched = False
     clay_cracked = False
+    ball_trail = []
 
 def handle_keys(key):
     global current_ball, current_liquid, current_planet, launch_speed_kmh, running, game_state
@@ -587,6 +595,9 @@ while running:
             ball_x += ball_vx
             ball_y += ball_vy
 
+            if launched:
+                ball_trail.append((int(ball_x), int(ball_y)))
+
             for p in particles:
                 p["x"] += p["vx"]
                 p["y"] += p["vy"]
@@ -595,11 +606,12 @@ while running:
             particles[:] = [p for p in particles if p["life"] > 0]
 
             if not clay_cracked:
+                PAD = 16  
                 for block in blocks:
-                    if (ball_x + ball_r > block.x and
-                        ball_x - ball_r < block.x + block.w and
-                        ball_y + ball_r > block.y and
-                        ball_y - ball_r < block.y + block.h):
+                    if (ball_x + ball_r > block.x + PAD and
+                        ball_x - ball_r < block.x + block.w - PAD and
+                        ball_y + ball_r > block.y + PAD and
+                        ball_y - ball_r < block.y + block.h - PAD):
                         speed  = math.sqrt(ball_vx**2 + ball_vy**2)
                         block.health -= get_ball_mass() * speed
                         if BALL_TYPES[current_ball]["shatter"]:
