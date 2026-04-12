@@ -65,7 +65,7 @@ SHATTER_IMAGES = {
 }
 
 CANNON_IMG = load_img("assets/cannon/cannon.png")
-#GROUND_IMG = load_img("assets/ground/ground.png")
+GROUND_IMG = load_img("assets/ground/ground.png")
 
 LIQUID_IMAGES = {
     "Water": load_img("assets/liquid/water.png"),
@@ -311,8 +311,8 @@ def draw_scene(mouse_x, mouse_y):
     screen.blit(bg, (0, 0))
 
     # Ground
-    #ground_img = pygame.transform.scale(GROUND_IMG, (SIDEBAR_X, SCREEN_HEIGHT - GROUND_Y))
-    #screen.blit(ground_img, (0, GROUND_Y))
+    ground_img = pygame.transform.scale(GROUND_IMG, (SIDEBAR_X, SCREEN_HEIGHT - GROUND_Y))
+    screen.blit(ground_img, (0, GROUND_Y))
 
     # NEW
     if liquid_mode:
