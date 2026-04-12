@@ -74,7 +74,7 @@ Damage dealt on collision is proportional to the ball's mass and speed at the mo
 
 - [Pygame](https://www.pygame.org/)
 
-## Built With
+## Built By
 - Akanksha Dange 
 - Ananya Bhale
 - Anshika Yadav
