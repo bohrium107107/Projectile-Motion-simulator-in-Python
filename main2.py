@@ -8,8 +8,24 @@ import random
 
 pygame.init()
 
+pygame.mixer.init()
+
 import os
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+SFX = {
+    "cannon":    pygame.mixer.Sound(os.path.join(BASE_PATH, "cannon_fire.mp3")),
+    "thud":      pygame.mixer.Sound(os.path.join(BASE_PATH, "ball_thud.mp3")),
+    "wall":      pygame.mixer.Sound(os.path.join(BASE_PATH, "ball_hits_wall.mp3")),
+    "block_hit": pygame.mixer.Sound(os.path.join(BASE_PATH, "block_breaking.mp3")),
+    "shatter":   pygame.mixer.Sound(os.path.join(BASE_PATH, "clay_shatter.mp3")),
+    "splash":    pygame.mixer.Sound(os.path.join(BASE_PATH, "splash.mp3")),
+    "click":     pygame.mixer.Sound(os.path.join(BASE_PATH, "click_sound.mp3")),
+    "escape":    pygame.mixer.Sound(os.path.join(BASE_PATH, "escape.ogg")),
+    "menu": pygame.mixer.Sound(os.path.join(BASE_PATH, "menu.ogg"))
+}
+
+
 
 def load_img(path):
     return pygame.image.load(os.path.join(BASE_PATH, path)).convert_alpha()
@@ -163,7 +179,7 @@ def kmh_to_pixels(kmh):
 
 #  Layout constants 
 CANNON_X  = sx(80)
-CANNON_Y  = sy(380)
+CANNON_Y  = sy(380) 
 GROUND_Y  = sy(540)
 TOPBAR_H  = sy(44)
 SIDEBAR_X = sx(1000)
@@ -307,6 +323,8 @@ def draw_menu(mouse_x, mouse_y):
 
 #  Draw 
 def draw_scene(mouse_x, mouse_y):
+    global CANNON_Y
+    CANNON_Y = sy(480) if not liquid_mode else sy(380)  # lower in no-liquid mode
     bg = pygame.transform.scale(BG_IMAGES[current_planet], (SIDEBAR_X, SCREEN_HEIGHT))
     screen.blit(bg, (0, 0))
 
@@ -435,6 +453,11 @@ def draw_scene(mouse_x, mouse_y):
 
     col_w = SIDEBAR_X // 6
 
+    panel_surf = pygame.Surface((SIDEBAR_X, panel_height), pygame.SRCALPHA)
+    panel_surf.fill((250, 250, 250, 140))
+    screen.blit(panel_surf, (0, panel_top))
+    pygame.draw.line(screen, (180, 180, 180), (0, panel_top), (SIDEBAR_X, panel_top), 2)
+
     controls = [
         ("Click", "Fire"),
         ("B", "Choose Ball"),
@@ -478,7 +501,10 @@ def draw_scene(mouse_x, mouse_y):
 
 #  Reset 
 def reset_ball():
-    global ball_x, ball_y, ball_vx, ball_vy, launched, clay_cracked, ball_trail
+    #global ball_x, ball_y, ball_vx, ball_vy, launched, clay_cracked, ball_trail
+    global ball_x, ball_y, ball_vx, ball_vy, launched, clay_cracked, ball_trail, CANNON_Y
+    CANNON_Y = sy(480) if not liquid_mode else sy(380)
+    ball_x   = float(CANNON_X)
     ball_x   = float(CANNON_X)
     ball_y   = float(CANNON_Y)
     ball_vx  = 0.0
@@ -490,7 +516,16 @@ def reset_ball():
 def handle_keys(key):
     global current_ball, current_liquid, current_planet, launch_speed_kmh, running, game_state
 
-    if key == pygame.K_ESCAPE: running = False
+    if key == pygame.K_ESCAPE:
+        running = False
+        return  
+
+    SFX["click"].play()
+
+    if key == pygame.K_ESCAPE: 
+        SFX["escape"].play()
+        pygame.time.delay(1000)
+        running = False
     if key == pygame.K_r:      reset_ball()
     if key == pygame.K_m:
         game_state = "menu"
@@ -514,6 +549,7 @@ def handle_keys(key):
         current_liquid = liquid_list[(liquid_list.index(current_liquid) + 1) % len(liquid_list)]
 
 game_state = "menu"
+prev_game_state = None
 liquid_mode = True
 #  Game loop 
 running = True
@@ -531,6 +567,7 @@ while running:
                 btn_y = sy(220)
                 btn_w, btn_h = sx(200), sy(50)
                 if btn_x < mouse_x < btn_x + btn_w and btn_y < mouse_y < btn_y + btn_h:
+                    SFX["click"].play()
                     liquid_mode = True
                     game_state = "play"
                 btn2_y = sy(285)              
@@ -541,6 +578,7 @@ while running:
         elif game_state == "play":
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not launched and not clay_cracked:
+                    SFX["cannon"].play()
                     speed_px = kmh_to_pixels(launch_speed_kmh)
                     angle    = math.atan2(mouse_y - CANNON_Y, mouse_x - CANNON_X)
                     ball_vx  = math.cos(angle) * speed_px
@@ -552,7 +590,12 @@ while running:
             if event.type == pygame.KEYDOWN:
                 handle_keys(event.key)
 
+    #if game_state == "menu":
+        #draw_menu(mouse_x, mouse_y)
+
     if game_state == "menu":
+        if prev_game_state != "menu":
+            SFX["menu"].play()
         draw_menu(mouse_x, mouse_y)
 
     elif game_state == "play":
@@ -571,6 +614,7 @@ while running:
                 in_liquid = False
 
             if in_liquid and not was_in_liquid:
+                SFX["splash"].play()
                 # Spawn 8 splash particles on entry
                 for _ in range(8):
                     particles.append({
@@ -615,10 +659,12 @@ while running:
                         speed  = math.sqrt(ball_vx**2 + ball_vy**2)
                         block.health -= get_ball_mass() * speed
                         if BALL_TYPES[current_ball]["shatter"]:
+                            SFX["shatter"].play()
                             clay_cracked = True
                             ball_vx = 0.0
                             ball_vy = 0.0
                         else:
+                            SFX["block_hit"].play()
                             e = get_ball_bounce()
                             if ball_x < block.x or ball_x > block.x + block.w:
                                 ball_vx *= -e
@@ -632,10 +678,13 @@ while running:
             if ball_y >= GROUND_Y - ball_r:
                 ball_y = float(GROUND_Y - ball_r)
                 if BALL_TYPES[current_ball]["shatter"]:
+                    SFX["shatter"].play()
                     clay_cracked = True
                     ball_vx = 0.0
                     ball_vy = 0.0
                 else:
+                    if abs(ball_vy) > 0.8:      
+                        SFX["thud"].play()
                     ball_vy = -ball_vy * get_ball_bounce()
                     ball_vx *= 0.85
                 if abs(ball_vy) < 0.8:
@@ -644,10 +693,12 @@ while running:
             if ball_x <= ball_r:
                 ball_x  = float(ball_r)
                 ball_vx = -ball_vx * 0.6
+                SFX["wall"].play()
             if ball_x >= SIDEBAR_X - ball_r:
                 ball_x  = float(SIDEBAR_X - ball_r)
                 ball_vx = -ball_vx * 0.6
+                SFX["wall"].play()
 
         draw_scene(mouse_x, mouse_y)
-
+    prev_game_state = game_state
 pygame.quit()
