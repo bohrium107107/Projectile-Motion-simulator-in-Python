@@ -90,6 +90,8 @@ LIQUID_IMAGES = {
     "Alcohol": load_img("assets/liquid/alcohol.png"),
 }
 
+MENU_BG = load_bg("assets/bg/menu_screen.png")
+
 # Fullscreen detection
 info = pygame.display.Info()
 SCREEN_WIDTH  = info.current_w
@@ -266,60 +268,40 @@ def get_preview_dots(cx, cy, vx, vy, steps=40, skip=3):
     return dots
 
 def draw_menu(mouse_x, mouse_y):
-    screen.fill((15, 15, 35))
+    # Draw the starfield background image
+    bg_scaled = pygame.transform.scale(MENU_BG, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen.blit(bg_scaled, (0, 0))
 
-    font_title  = pygame.font.SysFont("Courier New", sv(60), bold=True)
-    font_sub    = pygame.font.SysFont("Courier New", sv(20))
-    font_small  = pygame.font.SysFont("Courier New", sv(15))
+    font_title = pygame.font.Font(os.path.join(BASE_PATH, "PressStart2P-Regular.ttf"), sv(28))
+    font_sub   = pygame.font.Font(os.path.join(BASE_PATH, "PressStart2P-Regular.ttf"), sv(14))
+    font_small = pygame.font.Font(os.path.join(BASE_PATH, "PressStart2P-Regular.ttf"), sv(9))
 
-    # Title
-    title = font_title.render("Physics Simulator", True, (150, 200, 255))
-    screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, sy(80)))
+    # ── Two buttons on the LEFT side ──────────────────────────
+    btn_w, btn_h = sx(260), sy(55)
+    btn_x = sx(80)
 
-    # Play button
-    btn_w, btn_h = sx(200), sy(50)
-    btn_x = SCREEN_WIDTH // 2 - btn_w // 2
-    btn_y = sy(220)
-    btn_color = (80, 200, 120) if (btn_x < mouse_x < btn_x + btn_w and btn_y < mouse_y < btn_y + btn_h) else (50, 130, 80)
-    pygame.draw.rect(screen, btn_color, (btn_x, btn_y, btn_w, btn_h), border_radius=8)
-    play_lbl = font_sub.render("PLAY", True, WHITE)
-    screen.blit(play_lbl, (btn_x + btn_w // 2 - play_lbl.get_width() // 2,
-                            btn_y + btn_h // 2 - play_lbl.get_height() // 2))
-    btn2_y = sy(285)
-    btn2_color = (80, 160, 220) if (btn_x < mouse_x < btn_x + btn_w and btn2_y < mouse_y < btn2_y + btn_h) else (50, 100, 150)
-    pygame.draw.rect(screen, btn2_color, (btn_x, btn2_y, btn_w, btn_h), border_radius=8)
-    no_liq_lbl = font_sub.render("PLAY (no liquid)", True, WHITE)
-    screen.blit(no_liq_lbl, (btn_x + btn_w // 2 - no_liq_lbl.get_width() // 2,
-                          btn2_y + btn_h // 2 - no_liq_lbl.get_height() // 2))
+    # Button 1 — PLAY (green)
+    btn1_y = sy(320)
+    hover1 = btn_x < mouse_x < btn_x + btn_w and btn1_y < mouse_y < btn1_y + btn_h
+    btn1_color = (80, 220, 120) if hover1 else (40, 140, 70)
+    pygame.draw.rect(screen, btn1_color, (btn_x, btn1_y, btn_w, btn_h), border_radius=10)
+    pygame.draw.rect(screen, (150, 255, 180), (btn_x, btn1_y, btn_w, btn_h), 2, border_radius=10)
+    lbl1 = font_sub.render("PLAY", True, WHITE)
+    screen.blit(lbl1, (btn_x + btn_w // 2 - lbl1.get_width() // 2,
+                        btn1_y + btn_h // 2 - lbl1.get_height() // 2))
 
-    # Instructions
-    instr_title = font_sub.render("Controls", True, (150, 200, 255))
-    screen.blit(instr_title, (SCREEN_WIDTH // 2 - instr_title.get_width() // 2, sy(360)))
-
-    keys  = ["Click", "R", "UP / DOWN", "1 - 5", "B", "L", "ESC"]
-    descs = ["Fire ball", "Reset ball", "Change speed", "Choose planet", "Cycle ball type", "Cycle liquid type", "Quit"]
-
-    col_key  = SCREEN_WIDTH // 2 - sx(20)
-    col_desc = SCREEN_WIDTH // 2 + sx(20)
-
-    for i, (k, d) in enumerate(zip(keys, descs)):
-        key_lbl  = font_small.render(k, True, (150, 200, 255))
-        desc_lbl = font_small.render(d, True, (200, 200, 200))
-        y = sy(395) + i * sy(28)
-        screen.blit(key_lbl,  (col_key - key_lbl.get_width(), y))
-        screen.blit(desc_lbl, (col_desc, y))
-
-    # Credits
-    credits = font_small.render("Made with Pygame", True, (80, 80, 100))
-    screen.blit(credits, (SCREEN_WIDTH // 2 - credits.get_width() // 2, SCREEN_HEIGHT - sy(20)))
-
-    for p in particles:
-        alpha = max(0, p["life"] / 20)
-        size = sv(4)
-        pygame.draw.rect(screen, (255, 255, 255), (int(p["x"]), int(p["y"]), size, size))
+    # Button 2 — PLAY (no buoyancy) (blue)
+    btn2_y = sy(395)
+    hover2 = btn_x < mouse_x < btn_x + btn_w and btn2_y < mouse_y < btn2_y + btn_h
+    btn2_color = (60, 160, 230) if hover2 else (30, 90, 160)
+    pygame.draw.rect(screen, btn2_color, (btn_x, btn2_y, btn_w, btn_h), border_radius=10)
+    pygame.draw.rect(screen, (120, 200, 255), (btn_x, btn2_y, btn_w, btn_h), 2, border_radius=10)
+    lbl2 = font_sub.render("PLAY (no liquid)", True, WHITE)
+    screen.blit(lbl2, (btn_x + btn_w // 2 - lbl2.get_width() // 2,
+                        btn2_y + btn_h // 2 - lbl2.get_height() // 2))
 
     pygame.display.flip()
-    return (btn_x, btn_y, btn_w, btn_h)
+    return (btn_x, btn1_y, btn_w, btn_h)
 
 #  Draw 
 def draw_scene(mouse_x, mouse_y):
@@ -563,15 +545,18 @@ while running:
 
         if game_state == "menu":
             if event.type == pygame.MOUSEBUTTONDOWN:
-                btn_x = SCREEN_WIDTH // 2 - sx(100)
-                btn_y = sy(220)
-                btn_w, btn_h = sx(200), sy(50)
-                if btn_x < mouse_x < btn_x + btn_w and btn_y < mouse_y < btn_y + btn_h:
+                btn_x = sx(90)
+                btn_w, btn_h = sx(260), sy(55)
+
+                btn1_y = sy(320)
+                if btn_x < mouse_x < btn_x + btn_w and btn1_y < mouse_y < btn1_y + btn_h:
                     SFX["click"].play()
                     liquid_mode = True
                     game_state = "play"
-                btn2_y = sy(285)              
+
+                btn2_y = sy(395)
                 if btn_x < mouse_x < btn_x + btn_w and btn2_y < mouse_y < btn2_y + btn_h:
+                    SFX["click"].play()
                     liquid_mode = False
                     game_state = "play"
 
